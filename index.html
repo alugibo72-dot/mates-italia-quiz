@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sei un vero Mate? - Mates Italia</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .container { max-width: 520px; width: 100%; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header .icon { font-size: 36px; margin-bottom: 4px; }
+  .header h1 { color: #f0c040; font-size: 22px; font-weight: 900; margin: 0; }
+  .header p { color: rgba(255,255,255,0.5); font-size: 13px; margin: 4px 0 0; }
+
+  .progress-bar-wrap { margin-bottom: 20px; }
+  .progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .progress-info span { color: rgba(255,255,255,0.6); font-size: 13px; }
+  .progress-info .score { color: #f0c040; font-weight: 700; }
+  .bar-bg { background: rgba(255,255,255,0.1); border-radius: 50px; height: 6px; }
+  .bar-fill { background: linear-gradient(90deg, #f0c040, #e67e22); border-radius: 50px; height: 6px; transition: width 0.3s; }
+
+  .question-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px; padding: 28px;
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 16px;
+  }
+  .question-card p { color: #fff; font-size: 18px; font-weight: 700; line-height: 1.5; margin: 0; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .opt-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 14px 18px;
+    color: #fff; font-size: 15px; text-align: left;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .opt-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+  .opt-btn.correct { background: rgba(46,213,115,0.2); border-color: #2ed573; color: #2ed573; font-weight: 700; }
+  .opt-btn.wrong { background: rgba(255,71,87,0.2); border-color: #ff4757; color: #ff4757; }
+  .opt-btn .letter { opacity: 0.6; margin-right: 10px; }
+
+  .explanation {
+    background: rgba(240,192,64,0.1);
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 14px; padding: 14px 18px;
+    margin-bottom: 16px; display: none;
+  }
+  .explanation p { color: #f0c040; font-size: 14px; line-height: 1.5; margin: 0; }
+
+  .next-btn {
+    background: linear-gradient(135deg, #f0c040, #e67e22);
+    border: none; border-radius: 50px;
+    padding: 14px 36px; color: #1a1a2e;
+    font-size: 16px; font-weight: 800;
+    cursor: pointer; width: 100%; display: none;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  /* Result */
+  .result { display: none; text-align: center; }
+  .result-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 40px;
+  }
+  .result-emoji { font-size: 72px; margin-bottom: 16px; }
+  .result-title { color: #f0c040; font-size: 28px; font-weight: 800; margin: 0 0 8px; }
+  .result-score { color: #fff; font-size: 48px; font-weight: 900; margin: 16px 0; }
+  .result-score span { font-size: 24px; opacity: 0.7; }
+  .result-msg { color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 32px; }
+  .community-badge {
+    background: rgba(240,192,64,0.15);
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 12px; padding: 12px 20px;
+    margin-bottom: 24px;
+    color: #f0c040; font-size: 14px; font-weight: 600;
+  }
+  .restart-btn {
+    background: linear-gradient(135deg, #f0c040, #e67e22);
+    border: none; border-radius: 50px;
+    padding: 14px 36px; color: #1a1a2e;
+    font-size: 16px; font-weight: 800;
+    cursor: pointer; width: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="quiz-section">
+    <div class="header">
+      <div class="icon">⚽</div>
+      <h1>Sei un vero Mate?</h1>
+      <p>Mates Italia Community</p>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-info">
+        <span id="q-counter">Domanda 1 di 10</span>
+        <span class="score" id="score-display">⭐ 0 punti</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+    </div>
+    <div class="question-card"><p id="question-text"></p></div>
+    <div class="options" id="options"></div>
+    <div class="explanation" id="explanation"><p id="explanation-text"></p></div>
+    <button class="next-btn" id="next-btn">Prossima domanda ➡️</button>
+  </div>
+
+  <div class="result" id="result-section">
+    <div class="result-card">
+      <div class="result-emoji" id="res-emoji"></div>
+      <h2 class="result-title" id="res-title"></h2>
+      <div class="result-score" id="res-score"></div>
+      <p class="result-msg" id="res-msg"></p>
+      <div class="community-badge">⚽ Mates Italia Community</div>
+      <button class="restart-btn" onclick="restart()">🔄 Rigioca il Quiz!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { q: "⚽ Da quanti giocatori è composta ogni squadra in Football Mates?", options: ["11 giocatori","16 giocatori","22 giocatori","18 giocatori"], correct: 2, explanation: "Ogni squadra è composta esattamente da 22 giocatori!" },
+  { q: "🏟️ Quanti edifici migliorabili ha lo stadio in Football Mates?", options: ["3 edifici","4 edifici","6 edifici","5 edifici"], correct: 3, explanation: "Lo stadio ha 5 edifici che puoi migliorare per potenziare la tua squadra!" },
+  { q: "📊 Quanti tipi di livelli esistono in Football Mates?", options: ["Solo 1 livello globale","3 livelli diversi","2 livelli: stagionale e globale","4 livelli a difficoltà crescente"], correct: 2, explanation: "Esistono 2 livelli: quello stagionale e quello globale!" },
+  { q: "🎯 Cosa sono i 'boost' in Football Mates?", options: ["Nuovi giocatori da acquistare","Potenziamenti ottenibili completando missioni","Edifici speciali dello stadio","Partite bonus da giocare"], correct: 1, explanation: "I boost sono potenziamenti che ottieni completando le missioni del gioco!" },
+  { q: "🎁 Quale di queste è una missione valida in Football Mates?", options: ["Costruire un nuovo stadio","Cambiare il nome della squadra","Inviare regali ai compagni","Eliminare un giocatore"], correct: 2, explanation: "Inviare regali ai compagni è una delle missioni per ottenere boost!" },
+  { q: "📺 Quale attività tra queste fa parte delle missioni di Football Mates?", options: ["Guardare annunci","Scrivere recensioni","Modificare il logo","Invitare arbitri"], correct: 0, explanation: "Guardare annunci è una delle missioni disponibili per ottenere potenziamenti!" },
+  { q: "💪 Quale delle seguenti è un'abilità migliorabile del giocatore?", options: ["Abilità di arbitraggio","Abilità di finitura","Abilità di tifo","Abilità di costruzione"], correct: 1, explanation: "L'abilità di finitura è una delle abilità che ogni giocatore può migliorare!" },
+  { q: "🛡️ Tra le abilità del giocatore, quale riguarda la fase difensiva?", options: ["Abilità di attacco","Abilità di esperienza","Abilità di difesa","Abilità di finitura"], correct: 2, explanation: "L'abilità di difesa potenzia le capacità difensive del tuo giocatore!" },
+  { q: "🏋️ Quale missione puoi completare per allenare la tua squadra?", options: ["Partecipare all'allenamento","Comprare nuovi edifici","Rinominare i giocatori","Cambiare stadio"], correct: 0, explanation: "Partecipare all'allenamento è una delle missioni per ottenere boost!" },
+  { q: "🎪 Quale attività ti permette di guadagnare boost partecipando in tempo reale?", options: ["Guardare le repliche","Partecipare ai live","Leggere le notizie","Visitare altri stadi"], correct: 1, explanation: "Partecipare ai live è una missione speciale per ottenere potenziamenti in tempo reale!" }
+];
+
+const results = [
+  { min:0, max:4, emoji:"😅", title:"Matricola!", msg:"Hai bisogno di allenarti ancora un po'! Torna in campo e studia le regole di Mates Italia!" },
+  { min:5, max:7, emoji:"💪", title:"Buon Mate!", msg:"Non male, ma puoi fare meglio! Continua a giocare e diventerai un campione!" },
+  { min:8, max:10, emoji:"🏆", title:"Campione di Mates Italia!", msg:"Sei un vero esperto! La community Mates Italia è orgogliosa di te!" }
+];
+
+let cur = 0, score = 0, answered = false;
+const letters = ["A","B","C","D"];
+
+function loadQuestion() {
+  const q = questions[cur];
+  document.getElementById("q-counter").textContent = `Domanda ${cur+1} di ${questions.length}`;
+  document.getElementById("score-display").textContent = `⭐ ${score} punti`;
+  document.getElementById("bar").style.width = `${(cur/questions.length)*100}%`;
+  document.getElementById("question-text").textContent = q.q;
+  document.getElementById("explanation").style.display = "none";
+  document.getElementById("next-btn").style.display = "none";
+  answered = false;
+
+  const opts = document.getElementById("options");
+  opts.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "opt-btn";
+    btn.innerHTML = `<span class="letter">${letters[i]}.</span>${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+}
+
+function selectAnswer(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[cur];
+  const btns = document.querySelectorAll(".opt-btn");
+  btns.forEach(b => b.disabled = true);
+  btns[q.correct].classList.add("correct");
+  if (i !== q.correct) btns[i].classList.add("wrong");
+  else score++;
+  document.getElementById("score-display").textContent = `⭐ ${score} punti`;
+  document.getElementById("explanation-text").textContent = "💡 " + q.explanation;
+  document.getElementById("explanation").style.display = "block";
+  const nb = document.getElementById("next-btn");
+  nb.style.display = "block";
+  nb.textContent = cur+1 >= questions.length ? "🏆 Vedi il risultato!" : "Prossima domanda ➡️";
+}
+
+document.getElementById("next-btn").onclick = () => {
+  cur++;
+  if (cur >= questions.length) showResult();
+  else loadQuestion();
+};
+
+function showResult() {
+  document.getElementById("quiz-section").style.display = "none";
+  const rs = document.getElementById("result-section");
+  rs.style.display = "block";
+  const r = results.find(x => score >= x.min && score <= x.max);
+  document.getElementById("res-emoji").textContent = r.emoji;
+  document.getElementById("res-title").textContent = r.title;
+  document.getElementById("res-score").innerHTML = `${score}<span>/10</span>`;
+  document.getElementById("res-msg").textContent = r.msg;
+}
+
+function restart() {
+  cur = 0; score = 0; answered = false;
+  document.getElementById("quiz-section").style.display = "block";
+  document.getElementById("result-section").style.display = "none";
+  loadQuestion();
+}
+
+loadQuestion();
+</script>
+</body>
+</html>
