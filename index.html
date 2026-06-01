@@ -19,6 +19,19 @@
   .header h1 { color: #f0c040; font-size: 22px; font-weight: 900; margin: 0; }
   .header p { color: rgba(255,255,255,0.5); font-size: 13px; margin: 4px 0 0; }
 
+  .music-btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin: 0 auto 20px;
+    background: rgba(240,192,64,0.15);
+    border: 1px solid rgba(240,192,64,0.4);
+    border-radius: 50px; padding: 8px 20px;
+    color: #f0c040; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .music-btn:hover { background: rgba(240,192,64,0.25); }
+  .music-icon { font-size: 16px; }
+
   .progress-bar-wrap { margin-bottom: 20px; }
   .progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
   .progress-info span { color: rgba(255,255,255,0.6); font-size: 13px; }
@@ -33,7 +46,6 @@
     margin-bottom: 16px;
   }
   .question-card p { color: #fff; font-size: 18px; font-weight: 700; line-height: 1.5; margin: 0; }
-
   .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
   .opt-btn {
     background: rgba(255,255,255,0.05);
@@ -47,7 +59,6 @@
   .opt-btn.correct { background: rgba(46,213,115,0.2); border-color: #2ed573; color: #2ed573; font-weight: 700; }
   .opt-btn.wrong { background: rgba(255,71,87,0.2); border-color: #ff4757; color: #ff4757; }
   .opt-btn .letter { opacity: 0.6; margin-right: 10px; }
-
   .explanation {
     background: rgba(240,192,64,0.1);
     border: 1px solid rgba(240,192,64,0.3);
@@ -55,7 +66,6 @@
     margin-bottom: 16px; display: none;
   }
   .explanation p { color: #f0c040; font-size: 14px; line-height: 1.5; margin: 0; }
-
   .next-btn {
     background: linear-gradient(135deg, #f0c040, #e67e22);
     border: none; border-radius: 50px;
@@ -64,8 +74,6 @@
     cursor: pointer; width: 100%; display: none;
     font-family: 'Segoe UI', Arial, sans-serif;
   }
-
-  /* Result */
   .result { display: none; text-align: center; }
   .result-card {
     background: rgba(255,255,255,0.05);
@@ -102,6 +110,12 @@
       <h1>Sei un vero Mate?</h1>
       <p>Mates Italia Community</p>
     </div>
+
+    <button class="music-btn" id="music-btn" onclick="toggleMusic()">
+      <span class="music-icon">🎵</span>
+      <span id="music-label">Attiva Musica</span>
+    </button>
+
     <div class="progress-bar-wrap">
       <div class="progress-info">
         <span id="q-counter">Domanda 1 di 10</span>
@@ -128,6 +142,101 @@
 </div>
 
 <script>
+// ---- MUSICA GENERATA CON WEB AUDIO API ----
+let audioCtx = null;
+let musicPlaying = false;
+let musicNodes = [];
+let musicInterval = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playNote(freq, start, duration, vol=0.15) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+  gain.gain.setValueAtTime(0, audioCtx.currentTime + start);
+  gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + start + 0.01);
+  gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + start + duration - 0.01);
+  osc.start(audioCtx.currentTime + start);
+  osc.stop(audioCtx.currentTime + start + duration);
+  musicNodes.push(osc);
+}
+
+function playBeat(start, vol=0.2) {
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i/data.length);
+  const src = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  src.buffer = buf;
+  src.connect(gain);
+  gain.connect(audioCtx.destination);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime + start);
+  src.start(audioCtx.currentTime + start);
+  musicNodes.push(src);
+}
+
+// Melodia energica stile sport
+const melody = [
+  [523,0,0.18],[523,0.2,0.18],[659,0.4,0.18],[784,0.6,0.35],
+  [698,1.0,0.18],[659,1.2,0.18],[523,1.4,0.35],
+  [440,1.8,0.18],[523,2.0,0.18],[659,2.2,0.18],[784,2.4,0.35],
+  [880,2.8,0.18],[784,3.0,0.18],[659,3.2,0.55],
+  [523,3.8,0.18],[659,4.0,0.18],[784,4.2,0.18],[880,4.4,0.35],
+  [988,4.8,0.18],[880,5.0,0.18],[784,5.2,0.35],
+  [659,5.6,0.18],[784,5.8,0.18],[880,6.0,0.18],[988,6.2,0.35],
+  [1047,6.6,0.35],[880,7.0,0.18],[784,7.2,0.55]
+];
+
+const bassline = [
+  [131,0,0.35],[165,0.4,0.35],[147,0.8,0.35],[131,1.2,0.35],
+  [110,1.6,0.35],[131,2.0,0.35],[147,2.4,0.35],[165,2.8,0.35],
+  [131,3.2,0.35],[165,3.6,0.35],[196,4.0,0.35],[165,4.4,0.35],
+  [147,4.8,0.35],[131,5.2,0.35],[110,5.6,0.35],[131,6.0,0.75]
+];
+
+const LOOP_DURATION = 7.8;
+
+function playLoop() {
+  melody.forEach(([f,s,d]) => playNote(f, s, d, 0.12));
+  bassline.forEach(([f,s,d]) => playNote(f, s, d, 0.08));
+  // Beat
+  for(let i=0;i<8;i++) {
+    playBeat(i*LOOP_DURATION/8, 0.15);
+    if(i%2===1) playBeat(i*LOOP_DURATION/8+0.05, 0.08);
+  }
+}
+
+function startMusic() {
+  initAudio();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  playLoop();
+  musicInterval = setInterval(() => { if(musicPlaying) playLoop(); }, LOOP_DURATION * 1000);
+  musicPlaying = true;
+  document.getElementById('music-label').textContent = 'Musica ON 🔊';
+  document.getElementById('music-btn').style.background = 'rgba(240,192,64,0.3)';
+}
+
+function stopMusic() {
+  clearInterval(musicInterval);
+  musicNodes.forEach(n => { try { n.stop(); } catch(e){} });
+  musicNodes = [];
+  musicPlaying = false;
+  document.getElementById('music-label').textContent = 'Attiva Musica';
+  document.getElementById('music-btn').style.background = 'rgba(240,192,64,0.15)';
+}
+
+function toggleMusic() {
+  if(musicPlaying) stopMusic();
+  else startMusic();
+}
+
+// ---- QUIZ ----
 const questions = [
   { q: "⚽ Da quanti giocatori è composta ogni squadra in Football Mates?", options: ["11 giocatori","16 giocatori","22 giocatori","18 giocatori"], correct: 2, explanation: "Ogni squadra è composta esattamente da 22 giocatori!" },
   { q: "🏟️ Quanti edifici migliorabili ha lo stadio in Football Mates?", options: ["3 edifici","4 edifici","6 edifici","5 edifici"], correct: 3, explanation: "Lo stadio ha 5 edifici che puoi migliorare per potenziare la tua squadra!" },
@@ -147,68 +256,78 @@ const results = [
   { min:8, max:10, emoji:"🏆", title:"Campione di Mates Italia!", msg:"Sei un vero esperto! La community Mates Italia è orgogliosa di te!" }
 ];
 
-let cur = 0, score = 0, answered = false;
-const letters = ["A","B","C","D"];
+let cur=0, score=0, answered=false;
+const letters=["A","B","C","D"];
+
+function playCorrectSound() {
+  initAudio();
+  [523,659,784].forEach((f,i) => playNote(f, i*0.08, 0.15, 0.2));
+}
+
+function playWrongSound() {
+  initAudio();
+  [300,250].forEach((f,i) => playNote(f, i*0.1, 0.15, 0.2));
+}
 
 function loadQuestion() {
-  const q = questions[cur];
-  document.getElementById("q-counter").textContent = `Domanda ${cur+1} di ${questions.length}`;
-  document.getElementById("score-display").textContent = `⭐ ${score} punti`;
-  document.getElementById("bar").style.width = `${(cur/questions.length)*100}%`;
-  document.getElementById("question-text").textContent = q.q;
-  document.getElementById("explanation").style.display = "none";
-  document.getElementById("next-btn").style.display = "none";
-  answered = false;
-
-  const opts = document.getElementById("options");
-  opts.innerHTML = "";
-  q.options.forEach((opt, i) => {
-    const btn = document.createElement("button");
-    btn.className = "opt-btn";
-    btn.innerHTML = `<span class="letter">${letters[i]}.</span>${opt}`;
-    btn.onclick = () => selectAnswer(i);
+  const q=questions[cur];
+  document.getElementById("q-counter").textContent=`Domanda ${cur+1} di ${questions.length}`;
+  document.getElementById("score-display").textContent=`⭐ ${score} punti`;
+  document.getElementById("bar").style.width=`${(cur/questions.length)*100}%`;
+  document.getElementById("question-text").textContent=q.q;
+  document.getElementById("explanation").style.display="none";
+  document.getElementById("next-btn").style.display="none";
+  answered=false;
+  const opts=document.getElementById("options");
+  opts.innerHTML="";
+  q.options.forEach((opt,i)=>{
+    const btn=document.createElement("button");
+    btn.className="opt-btn";
+    btn.innerHTML=`<span class="letter">${letters[i]}.</span>${opt}`;
+    btn.onclick=()=>selectAnswer(i);
     opts.appendChild(btn);
   });
 }
 
 function selectAnswer(i) {
-  if (answered) return;
-  answered = true;
-  const q = questions[cur];
-  const btns = document.querySelectorAll(".opt-btn");
-  btns.forEach(b => b.disabled = true);
+  if(answered) return;
+  answered=true;
+  const q=questions[cur];
+  const btns=document.querySelectorAll(".opt-btn");
+  btns.forEach(b=>b.disabled=true);
   btns[q.correct].classList.add("correct");
-  if (i !== q.correct) btns[i].classList.add("wrong");
-  else score++;
-  document.getElementById("score-display").textContent = `⭐ ${score} punti`;
-  document.getElementById("explanation-text").textContent = "💡 " + q.explanation;
-  document.getElementById("explanation").style.display = "block";
-  const nb = document.getElementById("next-btn");
-  nb.style.display = "block";
-  nb.textContent = cur+1 >= questions.length ? "🏆 Vedi il risultato!" : "Prossima domanda ➡️";
+  if(i!==q.correct) { btns[i].classList.add("wrong"); playWrongSound(); }
+  else { score++; playCorrectSound(); }
+  document.getElementById("score-display").textContent=`⭐ ${score} punti`;
+  document.getElementById("explanation-text").textContent="💡 "+q.explanation;
+  document.getElementById("explanation").style.display="block";
+  const nb=document.getElementById("next-btn");
+  nb.style.display="block";
+  nb.textContent=cur+1>=questions.length?"🏆 Vedi il risultato!":"Prossima domanda ➡️";
 }
 
-document.getElementById("next-btn").onclick = () => {
+document.getElementById("next-btn").onclick=()=>{
   cur++;
-  if (cur >= questions.length) showResult();
+  if(cur>=questions.length) showResult();
   else loadQuestion();
 };
 
 function showResult() {
-  document.getElementById("quiz-section").style.display = "none";
-  const rs = document.getElementById("result-section");
-  rs.style.display = "block";
-  const r = results.find(x => score >= x.min && score <= x.max);
-  document.getElementById("res-emoji").textContent = r.emoji;
-  document.getElementById("res-title").textContent = r.title;
-  document.getElementById("res-score").innerHTML = `${score}<span>/10</span>`;
-  document.getElementById("res-msg").textContent = r.msg;
+  stopMusic();
+  document.getElementById("quiz-section").style.display="none";
+  const rs=document.getElementById("result-section");
+  rs.style.display="block";
+  const r=results.find(x=>score>=x.min&&score<=x.max);
+  document.getElementById("res-emoji").textContent=r.emoji;
+  document.getElementById("res-title").textContent=r.title;
+  document.getElementById("res-score").innerHTML=`${score}<span>/10</span>`;
+  document.getElementById("res-msg").textContent=r.msg;
 }
 
 function restart() {
-  cur = 0; score = 0; answered = false;
-  document.getElementById("quiz-section").style.display = "block";
-  document.getElementById("result-section").style.display = "none";
+  cur=0; score=0; answered=false;
+  document.getElementById("quiz-section").style.display="block";
+  document.getElementById("result-section").style.display="none";
   loadQuestion();
 }
 
